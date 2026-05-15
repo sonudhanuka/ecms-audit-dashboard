@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ECMS Quality Audit Dashboard — April 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#080c14;
+  --bg2:#0b1020;
+  --surface:#0f1624;
+  --surface2:#141c2e;
+  --surface3:#192038;
+  --border:rgba(99,140,220,0.10);
+  --border2:rgba(99,140,220,0.20);
+  --border3:rgba(99,140,220,0.35);
+  --blue:#4f8ef7;
+  --blue2:#2d6de0;
+  --teal:#00bfa5;
+  --cyan:#00d4e8;
+  --amber:#f5a623;
+  --red:#f44965;
+  --green:#29d68f;
+  --purple:#9b6dff;
+  --text:#cdd8f0;
+  --text2:#8fa4cc;
+  --text3:#4e6490;
+  --ims:#4f8ef7;
+  --ams:#9b6dff;
+  --chg:#00bfa5;
+  --fs-xs:11px; --fs-sm:12px; --fs-base:13px; --fs-md:14px;
+  --fs-lg:16px; --fs-xl:20px; --fs-2xl:28px; --fs-3xl:40px;
+  --r:8px; --r2:12px; --r3:16px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:var(--fs-base);line-height:1.5;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(79,142,247,0.06) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 100%,rgba(155,109,255,0.05) 0%,transparent 60%),
+             repeating-linear-gradient(0deg,transparent,transparent 47px,rgba(99,140,220,0.018) 48px),
+             repeating-linear-gradient(90deg,transparent,transparent 47px,rgba(99,140,220,0.018) 48px)}
+
+.wrap{max-width:1520px;margin:0 auto;padding:20px 24px;position:relative;z-index:1}
+
+/* ── NAV HEADER ──────────────────────────────────────────────────────── */
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.nav-brand{display:flex;align-items:center;gap:14px}
+.brand-mark{width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#2d6de0,#00bfa5);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#fff;letter-spacing:-.5px;box-shadow:0 0 24px rgba(79,142,247,0.25)}
+.brand-text h1{font-size:var(--fs-xl);font-weight:700;letter-spacing:-.3px;color:#e8eeff}
+.brand-text p{font-size:var(--fs-sm);color:var(--text3);margin-top:1px;font-weight:400}
+.nav-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;font-size:var(--fs-xs);font-family:'IBM Plex Mono',monospace;font-weight:500;letter-spacing:.3px;border:1px solid;white-space:nowrap}
+.badge-blue{color:#7eb5ff;border-color:rgba(79,142,247,0.3);background:rgba(79,142,247,0.08)}
+.badge-purple{color:#c4a6ff;border-color:rgba(155,109,255,0.3);background:rgba(155,109,255,0.08)}
+.badge-teal{color:#5de8d8;border-color:rgba(0,191,165,0.3);background:rgba(0,191,165,0.08)}
+.badge-amber{color:#ffd27a;border-color:rgba(245,166,35,0.3);background:rgba(245,166,35,0.08)}
+.dot-live{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── FILTER BAR ──────────────────────────────────────────────────────── */
+.filter-strip{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r2);padding:14px 20px;margin-bottom:22px;display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.filter-strip label{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--text3);white-space:nowrap}
+.filter-strip select,.filter-strip input{background:var(--surface2);color:var(--text);border:1px solid var(--border2);border-radius:var(--r);padding:7px 12px;font-size:var(--fs-sm);font-family:'IBM Plex Sans',sans-serif;outline:none;cursor:pointer;min-width:138px;transition:border-color .2s}
+.filter-strip select:hover,.filter-strip input:hover,.filter-strip select:focus,.filter-strip input:focus{border-color:var(--blue)}
+.filter-strip input::placeholder{color:var(--text3)}
+.sep{width:1px;height:24px;background:var(--border2);flex-shrink:0}
+.btn-reset{background:transparent;border:1px solid rgba(244,73,101,0.4);color:var(--red);border-radius:var(--r);padding:7px 16px;font-size:var(--fs-sm);font-family:'IBM Plex Sans',sans-serif;cursor:pointer;font-weight:500;transition:all .2s}
+.btn-reset:hover{background:rgba(244,73,101,0.1);border-color:var(--red)}
+.filter-count{margin-left:auto;font-size:var(--fs-xs);font-family:'IBM Plex Mono',monospace;color:var(--text3);white-space:nowrap}
+.filter-count span{color:var(--text2);font-weight:500}
+
+/* ── SECTION TABS ─────────────────────────────────────────────────────── */
+.section-tabs{display:flex;gap:4px;margin-bottom:22px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r2);padding:4px;width:fit-content}
+.stab{background:none;border:none;color:var(--text3);font-family:'IBM Plex Sans',sans-serif;font-size:var(--fs-base);font-weight:500;padding:8px 24px;cursor:pointer;border-radius:var(--r);transition:all .2s}
+.stab.active-ims{background:rgba(79,142,247,0.15);color:#7eb5ff;border:1px solid rgba(79,142,247,0.3)}
+.stab.active-ams{background:rgba(155,109,255,0.15);color:#c4a6ff;border:1px solid rgba(155,109,255,0.3)}
+.stab.active-all{background:rgba(0,191,165,0.12);color:#5de8d8;border:1px solid rgba(0,191,165,0.25)}
+
+/* ── KPI ROW ─────────────────────────────────────────────────────────── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:22px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px 20px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi:hover{border-color:var(--border3)}
+.kpi::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:var(--r2) var(--r2) 0 0}
+.kpi-b::after{background:linear-gradient(90deg,var(--blue),transparent)}
+.kpi-p::after{background:linear-gradient(90deg,var(--purple),transparent)}
+.kpi-t::after{background:linear-gradient(90deg,var(--teal),transparent)}
+.kpi-r::after{background:linear-gradient(90deg,var(--red),transparent)}
+.kpi-a::after{background:linear-gradient(90deg,var(--amber),transparent)}
+.kpi-g::after{background:linear-gradient(90deg,var(--green),transparent)}
+.kpi-label{font-size:var(--fs-xs);font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px}
+.kpi-val{font-size:var(--fs-3xl);font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1;letter-spacing:-1px}
+.kpi-sub{font-size:var(--fs-xs);color:var(--text3);margin-top:5px}
+.kpi-bar{height:3px;background:var(--surface3);border-radius:2px;margin-top:10px;overflow:hidden}
+.kpi-bar-fill{height:100%;border-radius:2px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.kpi-b .kpi-val{color:var(--blue)} .kpi-p .kpi-val{color:var(--purple)}
+.kpi-t .kpi-val{color:var(--teal)} .kpi-r .kpi-val{color:var(--red)}
+.kpi-a .kpi-val{color:var(--amber)} .kpi-g .kpi-val{color:var(--green)}
+
+/* ── GRID LAYOUTS ────────────────────────────────────────────────────── */
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:22px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}
+.grid-2-1{display:grid;grid-template-columns:2fr 1fr;gap:18px;margin-bottom:22px}
+@media(max-width:1100px){.grid-3{grid-template-columns:1fr 1fr}.grid-2-1{grid-template-columns:1fr}}
+@media(max-width:780px){.grid-3,.grid-2,.grid-2-1{grid-template-columns:1fr}}
+
+/* ── CARD ─────────────────────────────────────────────────────────────── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:var(--fs-md);font-weight:600;color:var(--text);letter-spacing:-.2px}
+.card-sub{font-size:var(--fs-xs);color:var(--text3);margin-top:2px}
+.chart-wrap{position:relative}
+
+/* ── SECTION DIVIDER ─────────────────────────────────────────────────── */
+.sec-head{display:flex;align-items:center;gap:10px;margin:28px 0 16px}
+.sec-head-line{flex:1;height:1px;background:var(--border2)}
+.sec-head-label{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);white-space:nowrap;padding:0 12px}
+.sec-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:6px;font-size:var(--fs-xs);font-weight:700;letter-spacing:.8px;text-transform:uppercase}
+.tag-ims{background:rgba(79,142,247,0.12);color:#7eb5ff;border:1px solid rgba(79,142,247,0.25)}
+.tag-ams{background:rgba(155,109,255,0.12);color:#c4a6ff;border:1px solid rgba(155,109,255,0.25)}
+.tag-overall{background:rgba(0,191,165,0.10);color:#5de8d8;border:1px solid rgba(0,191,165,0.22)}
+
+/* ── TABLES ──────────────────────────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:var(--fs-sm)}
+th{font-size:var(--fs-xs);font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);padding:9px 12px;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap;cursor:pointer;user-select:none;transition:color .15s}
+th:hover{color:var(--text2)}
+th.sort-active{color:var(--blue)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;font-size:var(--fs-sm)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(79,142,247,0.04)}
+.td-mono{font-family:'IBM Plex Mono',monospace;font-size:var(--fs-xs)}
+.nm-clickable{cursor:pointer}
+.nm-clickable:hover td{background:rgba(244,73,101,0.06) !important}
+.cmt-row{display:none}
+.cmt-row.open{display:table-row}
+.cmt-row td{background:rgba(0,0,0,0.3) !important;padding:10px 16px;font-size:var(--fs-xs);color:var(--text3);font-style:italic;line-height:1.5;border-left:2px solid var(--red)}
+
+/* ── PILLS / BADGES ──────────────────────────────────────────────────── */
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600;white-space:nowrap}
+.p100{background:rgba(41,214,143,0.14);color:#29d68f;border:1px solid rgba(41,214,143,0.28)}
+.p95{background:rgba(79,142,247,0.14);color:#7eb5ff;border:1px solid rgba(79,142,247,0.28)}
+.p90{background:rgba(245,166,35,0.14);color:#ffd27a;border:1px solid rgba(245,166,35,0.28)}
+.p80{background:rgba(244,73,101,0.14);color:#ff8da5;border:1px solid rgba(244,73,101,0.28)}
+.plow{background:rgba(244,73,101,0.22);color:var(--red);border:1px solid rgba(244,73,101,0.4)}
+
+.src-pill{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:600}
+.src-inc{background:rgba(79,142,247,0.15);color:#7eb5ff}
+.src-sr{background:rgba(155,109,255,0.15);color:#c4a6ff}
+.src-chg{background:rgba(0,191,165,0.15);color:#5de8d8}
+
+/* ── PROGRESS BAR ────────────────────────────────────────────────────── */
+.bar-wrap{display:flex;align-items:center;gap:8px;width:100%}
+.bar-track{flex:1;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;min-width:60px}
+.bar-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* ── TOP PERFORMERS ──────────────────────────────────────────────────── */
+.performers-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px}
+@media(max-width:1100px){.performers-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.performers-grid{grid-template-columns:1fr 1fr}}
+.perf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:16px;text-align:center;position:relative;overflow:hidden;transition:all .2s}
+.perf-card:hover{border-color:var(--border3);transform:translateY(-2px)}
+.perf-rank{position:absolute;top:8px;left:10px;font-size:10px;font-family:'IBM Plex Mono',monospace;font-weight:700;color:var(--text3)}
+.perf-rank.r1{color:#ffd27a} .perf-rank.r2{color:#c0c8d8} .perf-rank.r3{color:#cd7f32}
+.perf-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;margin:0 auto 10px;background:linear-gradient(135deg,var(--blue2),var(--teal))}
+.perf-name{font-size:var(--fs-sm);font-weight:600;color:var(--text);margin-bottom:2px;line-height:1.3}
+.perf-team{font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.3}
+.perf-score{font-size:22px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.perf-meta{font-size:10px;color:var(--text3);margin-top:4px}
+.perf-gold{background:linear-gradient(135deg,rgba(245,166,35,0.12),rgba(245,166,35,0.04));border-color:rgba(245,166,35,0.25)}
+.perf-silver{background:linear-gradient(135deg,rgba(192,200,216,0.10),transparent);border-color:rgba(192,200,216,0.18)}
+.perf-bronze{background:linear-gradient(135deg,rgba(205,127,50,0.10),transparent);border-color:rgba(205,127,50,0.18)}
+
+/* ── WEEK CARDS ──────────────────────────────────────────────────────── */
+.week-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.wk-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.wk-label{font-size:var(--fs-xs);font-family:'IBM Plex Mono',monospace;color:var(--text3);margin-bottom:4px}
+.wk-score{font-size:24px;font-weight:700;font-family:'IBM Plex Mono',monospace;line-height:1}
+.wk-detail{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* ── SECTION SCORE STRIP ─────────────────────────────────────────────── */
+.score-strip{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+.score-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:18px 22px;display:flex;align-items:center;gap:18px}
+.score-ring{width:64px;height:64px;flex-shrink:0;position:relative}
+.score-ring svg{transform:rotate(-90deg)}
+.score-ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace}
+.score-info h3{font-size:var(--fs-lg);font-weight:700;letter-spacing:-.3px;margin-bottom:2px}
+.score-info p{font-size:var(--fs-xs);color:var(--text3)}
+.score-info .score-meta{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+.score-stat{font-size:var(--fs-xs);font-family:'IBM Plex Mono',monospace}
+
+/* ── HIGHLIGHT ───────────────────────────────────────────────────────── */
+.hl{background:rgba(245,166,35,0.22);border-radius:2px;padding:0 1px;color:inherit}
+
+/* ── FOOTER ──────────────────────────────────────────────────────────── */
+.footer{text-align:center;padding:16px 0 10px;font-size:var(--fs-xs);font-family:'IBM Plex Mono',monospace;color:var(--text3);border-top:1px solid var(--border);margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nav-brand">
+    <div class="brand-mark">EC</div>
+    <div class="brand-text">
+      <h1>ECMS Quality Audit Dashboard</h1>
+      <p>IMS · AMS · Change Audit &nbsp;|&nbsp; April 2026 &nbsp;|&nbsp; Week 1 – Week 4</p>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="badge badge-teal"><span class="dot-live"></span>Live Filters</span>
+    <span class="badge badge-blue">IMS Tower</span>
+    <span class="badge badge-purple">AMS Tower</span>
+    <span class="badge badge-amber" id="active-filter-badge">All Data</span>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-strip">
+  <label>Section</label>
+  <select id="f-section">
+    <option value="">All Sections</option>
+    <option value="IMS">IMS</option>
+    <option value="AMS">AMS</option>
+  </select>
+  <div class="sep"></div>
+  <label>Week</label>
+  <select id="f-week">
+    <option value="">All Weeks</option>
+    <option value="Week 1">Week 1</option>
+    <option value="Week 2">Week 2</option>
+    <option value="Week 3">Week 3</option>
+    <option value="Week 4">Week 4</option>
+  </select>
+  <div class="sep"></div>
+  <label>Source</label>
+  <select id="f-source">
+    <option value="">All Sources</option>
+    <option value="INC">INC</option>
+    <option value="SR">SR</option>
+    <option value="CHG">CHG</option>
+  </select>
+  <div class="sep"></div>
+  <label>Tower</label>
+  <select id="f-tower"><option value="">All Towers</option></select>
+  <div class="sep"></div>
+  <label>Evaluation</label>
+  <select id="f-eval">
+    <option value="">All</option>
+    <option value="Met">Met</option>
+    <option value="Not Met">Not Met</option>
+  </select>
+  <div class="sep"></div>
+  <input type="text" id="f-agent" placeholder="🔍 Search agent name…" style="min-width:180px">
+  <button class="btn-reset" onclick="resetFilters()">✕ Reset</button>
+  <div class="filter-count" id="filter-count">Loading…</div>
+</div>
+
+<!-- SCORE OVERVIEW STRIP -->
+<div class="score-strip" id="score-strip"></div>
+
+<!-- KPI CARDS -->
+<div class="kpi-row" id="kpi-row"></div>
+
+<!-- TOP 5 OVERALL PERFORMERS -->
+<div class="sec-head"><div class="sec-head-line"></div><div class="sec-head-label">🏆 Top 5 Performers — Overall</div><div class="sec-head-line"></div></div>
+<div class="performers-grid" id="top5-overall"></div>
+
+<!-- IMS SECTION -->
+<div class="sec-head" id="ims-section-head">
+  <div class="sec-head-line"></div>
+  <span class="sec-tag tag-ims">IMS — Incident Management System</span>
+  <div class="sec-head-line"></div>
+</div>
+<div class="kpi-row" id="ims-kpi-row"></div>
+<div class="grid-2" id="ims-charts-row1">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Weekly Quality Score — IMS</div><div class="card-sub">Met % across INC + CHG sources</div></div></div>
+    <div class="week-strip" id="ims-week-cards"></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="ims-line-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">IMS Distribution</div><div class="card-sub">Met vs Not Met breakdown</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ims-donut-chart"></canvas></div>
+    <div id="ims-donut-legend" style="display:flex;gap:18px;justify-content:center;font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:10px"></div>
+  </div>
+</div>
+<div class="grid-2" id="ims-charts-row2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">IMS — Tower Performance</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ims-tower-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">IMS — Top Non-Compliance Parameters</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ims-param-chart"></canvas></div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">IMS Top 5 Performers</div><div class="card-sub">100% compliance engineers</div></div></div>
+    <div class="performers-grid" id="ims-top5" style="grid-template-columns:repeat(3,1fr)"></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">IMS — Agent Leaderboard</div></div>
+    <div style="display:flex;gap:6px">
+      <span class="src-pill src-inc" style="cursor:pointer;padding:4px 10px;border-radius:6px" onclick="filterEngSection('IMS')">All</span>
+    </div></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th onclick="sortTable('ims-agent-table','name',1)">Agent <span id="sh-ims-name"></span></th>
+          <th onclick="sortTable('ims-agent-table','team',1)">Team <span id="sh-ims-team"></span></th>
+          <th onclick="sortTable('ims-agent-table','met',-1)">Met <span id="sh-ims-met"></span></th>
+          <th onclick="sortTable('ims-agent-table','notMet',-1)">NM <span id="sh-ims-notMet"></span></th>
+          <th onclick="sortTable('ims-agent-table','score',-1)">Score <span id="sh-ims-score"></span></th>
+        </tr></thead>
+        <tbody id="ims-agent-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- IMS NM TABLE -->
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head"><div><div class="card-title">IMS — Non-Compliant Records</div><div class="card-sub">Click any row to expand audit remarks</div></div><span class="pill plow" id="ims-nm-count">—</span></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Ticket</th><th>Week</th><th>Source</th><th>Tower</th><th>Team</th><th>Parameter</th><th>Agent</th></tr></thead>
+      <tbody id="ims-nm-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- AMS SECTION -->
+<div class="sec-head" id="ams-section-head">
+  <div class="sec-head-line"></div>
+  <span class="sec-tag tag-ams">AMS — Application Management System</span>
+  <div class="sec-head-line"></div>
+</div>
+<div class="kpi-row" id="ams-kpi-row"></div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Weekly Quality Score — AMS</div><div class="card-sub">Met % across INC + SR sources</div></div></div>
+    <div class="week-strip" id="ams-week-cards"></div>
+    <div class="chart-wrap" style="height:200px"><canvas id="ams-line-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">AMS Distribution</div><div class="card-sub">Met vs Not Met breakdown</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ams-donut-chart"></canvas></div>
+    <div id="ams-donut-legend" style="display:flex;gap:18px;justify-content:center;font-size:11px;font-family:'IBM Plex Mono',monospace;margin-top:10px"></div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">AMS — Source Breakdown (INC vs SR)</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ams-src-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">AMS — Top Non-Compliance Parameters</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="ams-param-chart"></canvas></div>
+  </div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">AMS Top 5 Performers</div><div class="card-sub">Highest compliance engineers</div></div></div>
+    <div class="performers-grid" id="ams-top5" style="grid-template-columns:repeat(3,1fr)"></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">AMS — Agent Leaderboard</div></div></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>#</th>
+          <th onclick="sortTable('ams-agent-table','name',1)">Agent <span id="sh-ams-name"></span></th>
+          <th onclick="sortTable('ams-agent-table','team',1)">Team <span id="sh-ams-team"></span></th>
+          <th onclick="sortTable('ams-agent-table','met',-1)">Met <span id="sh-ams-met"></span></th>
+          <th onclick="sortTable('ams-agent-table','notMet',-1)">NM <span id="sh-ams-notMet"></span></th>
+          <th onclick="sortTable('ams-agent-table','score',-1)">Score <span id="sh-ams-score"></span></th>
+        </tr></thead>
+        <tbody id="ams-agent-table"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- AMS NM TABLE -->
+<div class="card" style="margin-bottom:22px">
+  <div class="card-head"><div><div class="card-title">AMS — Non-Compliant Records</div><div class="card-sub">Click any row to expand audit remarks</div></div><span class="pill plow" id="ams-nm-count">—</span></div>
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr><th>Ticket</th><th>Week</th><th>Source</th><th>Tower</th><th>Team</th><th>Parameter</th><th>Agent</th></tr></thead>
+      <tbody id="ams-nm-table"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- COMBINED COMPARISON -->
+<div class="sec-head">
+  <div class="sec-head-line"></div>
+  <span class="sec-tag tag-overall">IMS vs AMS — Comparative Overview</span>
+  <div class="sec-head-line"></div>
+</div>
+<div class="grid-2">
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Weekly Score Trend — IMS vs AMS</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="compare-line-chart"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="card-head"><div><div class="card-title">Parameter Failure Comparison</div></div></div>
+    <div class="chart-wrap" style="height:260px"><canvas id="compare-param-chart"></canvas></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer" id="dash-footer"></div>
+
+</div><!-- /wrap -->
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────
+const RAW_RECORDS = [{"Week":"Week 1","TicketNum":"INC56294566","Tower":"Workplace","Team":"Workplace-Messaging-O365","Parameter":"Categorization","Evaluation":"Not Met","Agent":"Arpan Nag","Remarks":"incorrect categprization","Source":"INC","Section":"IMS"},{"Week":"Week 1","TicketNum":"INC56221354","Tower":"Service Desk","Team":"Service Desk-Incident","Parameter":"Short Description","Evaluation":"Not Met","Agent":"Raja Nayak","Remarks":"short decription not updated in correct formalt","Source":"INC","Section":"IMS"},{"Week":"Week 2","TicketNum":"INC56527148","Tower":"Network","Team":"Networks-Operations","Parameter":"Categorization","Evaluation":"Not Met","Agent":"Anjali Bisht","Remarks":"incorrect categorization","Source":"INC","Section":"IMS"},{"Week":"Week 2","TicketNum":"INC56527148","Tower":"Network","Team":"Networks-Operations","Parameter":"Work Notes","Evaluation":"Not Met","Agent":"Anjali Bisht","Remarks":"","Source":"INC","Section":"IMS"},{"Week":"Week 2","TicketNum":"INC56527148","Tower":"Network","Team":"Networks-Operations","Parameter":"Short Description","Evaluation":"Not Met","Agent":"Anjali Bisht","Remarks":"","Source":"INC","Section":"IMS"},{"Week":"Week 1","TicketNum":"CHG1361687","Tower":"Security","Team":"Security-Active Directory","Parameter":"Description","Evaluation":"Not Met","Agent":"Akshata Sastur","Remarks":"Short description is not updated as per the format","Source":"CHG","Section":"IMS"},{"Week":"Week 1","TicketNum":"CHG1361687","Tower":"Security","Team":"Security-Active Directory","Parameter":"Closure code","Evaluation":"Not Met","Agent":"Akshata Sastur","Remarks":"Closure notes are not updated in detail","Source":"CHG","Section":"IMS"},{"Week":"Week 1","TicketNum":"CHG1365700","Tower":"AMS","Team":"AO-ERP-BASIS","Parameter":"Task Completion","Evaluation":"Not Met","Agent":"Akshay Dinesh Jadhav","Remarks":"Change task is not completed","Source":"CHG","Section":"IMS"},{"Week":"Week 1","TicketNum":"CHG1367116","Tower":"Cloud","Team":"Cloud-Windows","Parameter":"RFC Template","Evaluation":"Not Met","Agent":"Advatiya Manoj Kumar","Remarks":"RFC template is not updated","Source":"CHG","Section":"IMS"},{"Week":"Week 1","TicketNum":"CHG1367116","Tower":"Cloud","Team":"Cloud-Windows","Parameter":"Closure code","Evaluation":"Not Met","Agent":"Advatiya Manoj Kumar","Remarks":"Closure notes are not updated","Source":"CHG","Section":"IMS"},{"Week":"Week 1","TicketNum":"INC55581410","Tower":"AMS","Team":"AO-ERP-RTR","Parameter":"Closure Information","Evaluation":"Not Met","Agent":"Prathima Janagam","Remarks":"nan","Source":"INC","Section":"AMS"},{"Week":"Week 1","TicketNum":"INC55586399","Tower":"AMS","Team":"AO-ERP-RTR","Parameter":"Work Notes - TS","Evaluation":"Not Met","Agent":"Prathima Janagam","Remarks":"nan","Source":"INC","Section":"AMS"},{"Week":"Week 1","TicketNum":"INC55540399","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"Work Notes - TS","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"nan","Source":"INC","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13165019","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - Task","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13165019","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - RITM","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13186553","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - Task","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13186553","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - RITM","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13141530","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - Task","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"},{"Week":"Week 1","TicketNum":"TASK13141530","Tower":"AMS","Team":"AO-ERP-SECURITY","Parameter":"State - RITM","Evaluation":"Not Met","Agent":"Karuna Jha","Remarks":"State changed to Closed complete directly from ARI without moving to WIP","Source":"SR","Section":"AMS"}];
+
+const AGENT_ROWS = [{"agent":"Advatiya Manoj Kumar","section":"IMS","team":"Cloud-Windows","tower":"Cloud","met":15,"notMet":2,"total":17,"tickets":2,"score":88.24},{"agent":"Afnan Farid Shaikh","section":"IMS","team":"Service Desk-Incident","tower":"Service Desk","met":7,"notMet":0,"total":7,"tickets":1,"score":100.0},{"agent":"Akshata Sastur","section":"IMS","team":"Security-Active Directory","tower":"Security","met":35,"notMet":7,"total":42,"tickets":5,"score":83.33},{"agent":"Akshay Dinesh Jadhav","section":"IMS","team":"AMS","tower":"AMS","met":3,"notMet":3,"total":6,"tickets":1,"score":50.0},{"agent":"Allu G S S D V Ramakrishna","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":26,"notMet":3,"total":29,"tickets":4,"score":89.66},{"agent":"Anirudh Guru Shasank Jalumuri","section":"AMS","team":"AO-ERP-BASIS","tower":"AMS","met":44,"notMet":7,"total":51,"tickets":7,"score":86.27},{"agent":"Anit Majumder","section":"AMS","team":"AO-ERP-FICO","tower":"AMS","met":10,"notMet":5,"total":15,"tickets":2,"score":66.67},{"agent":"Ankita Balakrishna Nagrale","section":"AMS","team":"AO-ERP-BASIS","tower":"AMS","met":12,"notMet":0,"total":12,"tickets":2,"score":100.0},{"agent":"Ankolla Rahul","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":52,"notMet":7,"total":59,"tickets":9,"score":88.14},{"agent":"Anjali Bisht","section":"IMS","team":"Networks-Operations","tower":"Network","met":19,"notMet":3,"total":22,"tickets":3,"score":86.36},{"agent":"Aparna Sinha","section":"AMS","team":"AO-NON ERP-SHAREPOINT-ONLINE","tower":"AMS","met":25,"notMet":2,"total":27,"tickets":3,"score":92.59},{"agent":"Arpan Nag","section":"IMS","team":"Workplace-Messaging-O365","tower":"Workplace","met":12,"notMet":1,"total":13,"tickets":2,"score":92.31},{"agent":"Ashay Jadhav","section":"AMS","team":"AO-ERP-PTM","tower":"AMS","met":9,"notMet":1,"total":10,"tickets":2,"score":90.0},{"agent":"Ashwin Rajesh Menon","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":20,"notMet":5,"total":25,"tickets":4,"score":80.0},{"agent":"Bhavana Deepthi Lakamthoti","section":"IMS","team":"Workplace-Remote Tech","tower":"Workplace","met":13,"notMet":0,"total":13,"tickets":2,"score":100.0},{"agent":"C Pradeepkumar","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":11,"notMet":0,"total":11,"tickets":1,"score":100.0},{"agent":"Dedeepya Chandrapatla","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":12,"notMet":0,"total":12,"tickets":3,"score":100.0},{"agent":"Dolrich Godinho","section":"IMS","team":"Cloud-Windows","tower":"Cloud","met":17,"notMet":0,"total":17,"tickets":2,"score":100.0},{"agent":"Girija Bramhanand Trimal","section":"IMS","team":"Cloud-Windows","tower":"Cloud","met":18,"notMet":0,"total":18,"tickets":2,"score":100.0},{"agent":"Karuna Jha","section":"AMS","team":"AO-ERP-SECURITY","tower":"AMS","met":14,"notMet":18,"total":32,"tickets":5,"score":43.75},{"agent":"Kshitija Shivaji Nimbalkar","section":"IMS","team":"Workplace-App Packaging","tower":"Workplace","met":13,"notMet":0,"total":13,"tickets":2,"score":100.0},{"agent":"Meharunnisa Mohammed","section":"AMS","team":"AO-NON ERP-SHAREPOINT-ONLINE","tower":"AMS","met":53,"notMet":2,"total":55,"tickets":7,"score":96.36},{"agent":"Papolu Harshitha","section":"AMS","team":"AO-ERP-PTM","tower":"AMS","met":5,"notMet":0,"total":5,"tickets":1,"score":100.0},{"agent":"Prathima Janagam","section":"AMS","team":"AO-ERP-RTR","tower":"AMS","met":19,"notMet":6,"total":25,"tickets":4,"score":76.0},{"agent":"Raja Nayak","section":"IMS","team":"Service Desk-Incident","tower":"Service Desk","met":7,"notMet":1,"total":8,"tickets":1,"score":87.5},{"agent":"Renuka Darku Shete","section":"IMS","team":"Workplace-App Packaging","tower":"Workplace","met":26,"notMet":0,"total":26,"tickets":4,"score":100.0},{"agent":"Shivani Patil","section":"IMS","team":"Cloud-Windows","tower":"Cloud","met":18,"notMet":0,"total":18,"tickets":2,"score":100.0},{"agent":"Varshini Kandula","section":"AMS","team":"AO-ERP-O2C","tower":"AMS","met":29,"notMet":0,"total":29,"tickets":5,"score":100.0}];
+
+const WEEKLY_ROWS = [{"week":"Week 1","section":"AMS","source":"INC","met":148,"notMet":13,"total":161,"tickets":26},{"week":"Week 1","section":"AMS","source":"SR","met":189,"notMet":44,"total":233,"tickets":54},{"week":"Week 1","section":"IMS","source":"CHG","met":208,"notMet":19,"total":227,"tickets":26},{"week":"Week 1","section":"IMS","source":"INC","met":87,"notMet":3,"total":90,"tickets":12},{"week":"Week 2","section":"AMS","source":"INC","met":72,"notMet":8,"total":80,"tickets":12},{"week":"Week 2","section":"AMS","source":"SR","met":223,"notMet":37,"total":260,"tickets":58},{"week":"Week 2","section":"IMS","source":"CHG","met":114,"notMet":17,"total":131,"tickets":14},{"week":"Week 2","section":"IMS","source":"INC","met":96,"notMet":8,"total":104,"tickets":16},{"week":"Week 3","section":"AMS","source":"INC","met":68,"notMet":6,"total":74,"tickets":11},{"week":"Week 3","section":"AMS","source":"SR","met":132,"notMet":27,"total":159,"tickets":35},{"week":"Week 3","section":"IMS","source":"CHG","met":167,"notMet":21,"total":188,"tickets":22},{"week":"Week 3","section":"IMS","source":"INC","met":35,"notMet":2,"total":37,"tickets":4},{"week":"Week 4","section":"AMS","source":"INC","met":69,"notMet":7,"total":76,"tickets":14},{"week":"Week 4","section":"IMS","source":"CHG","met":87,"notMet":3,"total":90,"tickets":10}];
+
+const TOWER_ROWS = [{"tower":"AMS","section":"AMS","met":987,"notMet":148,"score":86.96,"tickets":227,"total":1135},{"tower":"AMS","section":"IMS","met":268,"notMet":43,"score":86.17,"tickets":38,"total":311},{"tower":"Cloud","section":"IMS","met":278,"notMet":13,"score":95.53,"tickets":33,"total":291},{"tower":"Network","section":"IMS","met":88,"notMet":12,"score":88.0,"tickets":12,"total":100},{"tower":"Security","section":"IMS","met":59,"notMet":9,"score":86.76,"tickets":8,"total":68},{"tower":"Service Desk","section":"IMS","met":66,"notMet":2,"score":97.06,"tickets":12,"total":68},{"tower":"Workplace","section":"IMS","met":154,"notMet":9,"score":94.48,"tickets":21,"total":163}];
+
+const PARAM_ROWS = [{"parameter":"RITM Worknotes (additional comments)","section":"AMS","count":44},{"parameter":"State - Task","section":"AMS","count":37},{"parameter":"Task Completion","section":"IMS","count":31},{"parameter":"Closure code","section":"IMS","count":30},{"parameter":"State - RITM","section":"AMS","count":18},{"parameter":"RFC Template","section":"IMS","count":16},{"parameter":"Status","section":"AMS","count":16},{"parameter":"Task Worknotes-Task","section":"AMS","count":15},{"parameter":"Short Description","section":"AMS","count":8},{"parameter":"Instructions not read/followed","section":"AMS","count":4},{"parameter":"Categorization","section":"IMS","count":4},{"parameter":"Closure Information","section":"AMS","count":4},{"parameter":"Description","section":"IMS","count":3},{"parameter":"Work Notes","section":"IMS","count":2},{"parameter":"Short Description","section":"IMS","count":2},{"parameter":"Work Notes - TS","section":"AMS","count":2},{"parameter":"Closure code","section":"AMS","count":2},{"parameter":"Task Completion","section":"AMS","count":1},{"parameter":"Work Notes","section":"AMS","count":1}];
+
+// Grand totals
+const GT = {
+  totalParams: 2136, totalTickets: 325,
+  imsMet: 913, imsNM: 88, imsTotal: 1001, imsTickets: 120,
+  amsMet: 987, amsNM: 148, amsTotal: 1135, amsTickets: 227,
+  agents: { IMS: 71, AMS: 49 }
+};
+
+// ─── CHART INSTANCES ─────────────────────────────────────────────────
+const charts = {};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+function scoreColor(p){
+  if(p>=100) return '#29d68f';
+  if(p>=95) return '#4f8ef7';
+  if(p>=90) return '#f5a623';
+  if(p>=80) return '#f5a623';
+  return '#f44965';
+}
+function pillClass(p){
+  if(p>=100) return 'p100';
+  if(p>=95) return 'p95';
+  if(p>=90) return 'p90';
+  if(p>=80) return 'p80';
+  return 'plow';
+}
+function fmt(n){ return Number(n).toLocaleString(); }
+function pct(met,total){ return total ? +(met/total*100).toFixed(2) : 0; }
+function hl(text,term){
+  if(!term) return text;
+  const re = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi');
+  return String(text).replace(re,'<span class="hl">$1</span>');
+}
+function initials(name){
+  const p = name.trim().split(' ');
+  if(p.length>=2) return p[0][0]+p[p.length-1][0];
+  return name.slice(0,2).toUpperCase();
+}
+function truncate(s,n){ return s.length>n ? s.slice(0,n)+'…' : s; }
+
+// ─── FILTER STATE ─────────────────────────────────────────────────────
+let sortStates = {};
+
+function getF(){
+  return {
+    section: document.getElementById('f-section').value,
+    week: document.getElementById('f-week').value,
+    source: document.getElementById('f-source').value,
+    tower: document.getElementById('f-tower').value,
+    eval: document.getElementById('f-eval').value,
+    agent: document.getElementById('f-agent').value.trim().toLowerCase()
+  };
+}
+
+function filterAgents(f, section){
+  return AGENT_ROWS.filter(a => {
+    if(section && a.section !== section) return false;
+    if(f.section && a.section !== f.section) return false;
+    if(f.tower && a.tower !== f.tower) return false;
+    if(f.agent && !a.agent.toLowerCase().includes(f.agent)) return false;
+    return true;
+  });
+}
+
+function filterWeekly(f, section){
+  return WEEKLY_ROWS.filter(w => {
+    if(section && w.section !== section) return false;
+    if(f.section && w.section !== f.section) return false;
+    if(f.week && w.week !== f.week) return false;
+    if(f.source && w.source !== f.source) return false;
+    return true;
+  });
+}
+
+function filterParams(f, section){
+  return PARAM_ROWS.filter(p => {
+    if(section && p.section !== section) return false;
+    if(f.section && p.section !== f.section) return false;
+    return true;
+  });
+}
+
+function filterNM(f, section){
+  return RAW_RECORDS.filter(r => {
+    if(r.Evaluation !== 'Not Met') return false;
+    if(section && r.Section !== section) return false;
+    if(f.section && r.Section !== f.section) return false;
+    if(f.week && r.Week !== f.week) return false;
+    if(f.source && r.Source !== f.source) return false;
+    if(f.tower && r.Tower !== f.tower) return false;
+    if(f.eval && r.Evaluation !== f.eval) return false;
+    if(f.agent && !r.Agent.toLowerCase().includes(f.agent)) return false;
+    return true;
+  });
+}
+
+// ─── WEEKLY AGGREGATE ────────────────────────────────────────────────
+function weeklyAgg(rows){
+  const map = {};
+  rows.forEach(r => {
+    if(!map[r.week]) map[r.week] = {week:r.week,met:0,notMet:0,total:0,tickets:0};
+    map[r.week].met += r.met; map[r.week].notMet += r.notMet;
+    map[r.week].total += r.total; map[r.week].tickets += r.tickets;
+  });
+  return ['Week 1','Week 2','Week 3','Week 4'].map(w => map[w]||{week:w,met:0,notMet:0,total:0,tickets:0});
+}
+
+// ─── SCORE STRIP ─────────────────────────────────────────────────────
+function renderScoreStrip(f){
+  const ims_w = filterWeekly(f,'IMS');
+  const ams_w = filterWeekly(f,'AMS');
+  const imsMet = ims_w.reduce((s,r)=>s+r.met,0);
+  const imsNM = ims_w.reduce((s,r)=>s+r.notMet,0);
+  const amsMet = ams_w.reduce((s,r)=>s+r.met,0);
+  const amsNM = ams_w.reduce((s,r)=>s+r.notMet,0);
+  const imsScore = pct(imsMet, imsMet+imsNM);
+  const amsScore = pct(amsMet, amsMet+amsNM);
+  const ims_ag = filterAgents(f,'IMS');
+  const ams_ag = filterAgents(f,'AMS');
+
+  function ringHTML(score, color, id){
+    const r=28, c=2*Math.PI*r, dash=c*score/100, gap=c-dash;
+    return `<div class="score-ring">
+      <svg viewBox="0 0 70 70" width="64" height="64">
+        <circle cx="35" cy="35" r="${r}" fill="none" stroke="rgba(99,140,220,0.12)" stroke-width="7"/>
+        <circle cx="35" cy="35" r="${r}" fill="none" stroke="${color}" stroke-width="7"
+          stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}" stroke-linecap="round"/>
+      </svg>
+      <div class="score-ring-val" style="color:${color}">${score.toFixed(1)}%</div>
+    </div>`;
+  }
+
+  document.getElementById('score-strip').innerHTML = `
+    <div class="score-panel">
+      ${ringHTML(imsScore,'#4f8ef7','ims')}
+      <div class="score-info">
+        <h3 style="color:#7eb5ff">IMS Quality Score</h3>
+        <p>Incident Management System</p>
+        <div class="score-meta">
+          <span class="score-stat" style="color:#29d68f">✓ ${fmt(imsMet)} Met</span>
+          <span class="score-stat" style="color:#f44965">✗ ${fmt(imsNM)} NM</span>
+          <span class="score-stat" style="color:#4e6490">${ims_ag.length} Engineers</span>
+        </div>
+      </div>
+    </div>
+    <div class="score-panel">
+      ${ringHTML(amsScore,'#9b6dff','ams')}
+      <div class="score-info">
+        <h3 style="color:#c4a6ff">AMS Quality Score</h3>
+        <p>Application Management System</p>
+        <div class="score-meta">
+          <span class="score-stat" style="color:#29d68f">✓ ${fmt(amsMet)} Met</span>
+          <span class="score-stat" style="color:#f44965">✗ ${fmt(amsNM)} NM</span>
+          <span class="score-stat" style="color:#4e6490">${ams_ag.length} Engineers</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── KPI ROW ──────────────────────────────────────────────────────────
+function renderKPI(containerId, items){
+  document.getElementById(containerId).innerHTML = items.map(item => `
+    <div class="kpi kpi-${item.color}">
+      <div class="kpi-label">${item.label}</div>
+      <div class="kpi-val">${item.value}</div>
+      ${item.bar !== undefined ? `<div class="kpi-bar"><div class="kpi-bar-fill" style="width:${Math.min(item.bar,100)}%;background:${item.barColor||'var(--blue)'}"></div></div>` : ''}
+      <div class="kpi-sub">${item.sub}</div>
+    </div>`).join('');
+}
+
+function renderAllKPIs(f){
+  const imsW = filterWeekly(f,'IMS'), amsW = filterWeekly(f,'AMS');
+  const imsMet=imsW.reduce((s,r)=>s+r.met,0), imsNM=imsW.reduce((s,r)=>s+r.notMet,0);
+  const amsMet=amsW.reduce((s,r)=>s+r.met,0), amsNM=amsW.reduce((s,r)=>s+r.notMet,0);
+  const totalMet=imsMet+amsMet, totalNM=imsNM+amsNM, totalParams=totalMet+totalNM;
+  const overallScore = pct(totalMet,totalParams);
+  const allAgents = filterAgents(f,'');
+  const imsAg = filterAgents(f,'IMS'), amsAg = filterAgents(f,'AMS');
+  const imsTickets = imsW.reduce((s,r)=>s+r.tickets,0);
+  const amsTickets = amsW.reduce((s,r)=>s+r.tickets,0);
+
+  renderKPI('kpi-row',[
+    {label:'Total Parameters',value:fmt(totalParams),color:'b',sub:'audit checks evaluated',bar:100,barColor:'#4f8ef7'},
+    {label:'Overall Quality Score',value:overallScore.toFixed(2)+'%',color:'g',sub:'combined IMS + AMS',bar:overallScore,barColor:scoreColor(overallScore)},
+    {label:'Total Met',value:fmt(totalMet),color:'t',sub:'compliant parameters'},
+    {label:'Total Not Met',value:fmt(totalNM),color:'r',sub:'non-compliant parameters',bar:totalParams?totalNM/totalParams*100:0,barColor:'#f44965'},
+    {label:'Total Tickets',value:fmt(imsTickets+amsTickets),color:'p',sub:'across IMS + AMS'},
+    {label:'Engineers Audited',value:fmt(allAgents.length),color:'a',sub:'unique engineers evaluated'},
+  ]);
+
+  renderKPI('ims-kpi-row',[
+    {label:'IMS Parameters',value:fmt(imsMet+imsNM),color:'b',sub:`INC + CHG sources`},
+    {label:'IMS Quality Score',value:pct(imsMet,imsMet+imsNM).toFixed(2)+'%',color:'g',sub:'met compliance rate',bar:pct(imsMet,imsMet+imsNM),barColor:scoreColor(pct(imsMet,imsMet+imsNM))},
+    {label:'IMS Met',value:fmt(imsMet),color:'t',sub:'compliant'},
+    {label:'IMS Not Met',value:fmt(imsNM),color:'r',sub:'non-compliant'},
+    {label:'IMS Tickets',value:fmt(imsTickets),color:'p',sub:'unique tickets'},
+  ]);
+
+  renderKPI('ams-kpi-row',[
+    {label:'AMS Parameters',value:fmt(amsMet+amsNM),color:'p',sub:`INC + SR sources`},
+    {label:'AMS Quality Score',value:pct(amsMet,amsMet+amsNM).toFixed(2)+'%',color:'g',sub:'met compliance rate',bar:pct(amsMet,amsMet+amsNM),barColor:scoreColor(pct(amsMet,amsMet+amsNM))},
+    {label:'AMS Met',value:fmt(amsMet),color:'t',sub:'compliant'},
+    {label:'AMS Not Met',value:fmt(amsNM),color:'r',sub:'non-compliant'},
+    {label:'AMS Tickets',value:fmt(amsTickets),color:'p',sub:'unique tickets'},
+  ]);
+
+  // update counter
+  document.getElementById('filter-count').innerHTML = `<span>${fmt(totalParams)}</span> params · <span>${fmt(totalNM)}</span> NM`;
+  const parts=[];
+  if(f.section) parts.push(f.section);
+  if(f.week) parts.push(f.week);
+  if(f.source) parts.push(f.source);
+  if(f.agent) parts.push(`"${f.agent}"`);
+  document.getElementById('active-filter-badge').textContent = parts.length ? parts.join(' · ') : 'All Data';
+}
+
+// ─── WEEK CARDS ───────────────────────────────────────────────────────
+function renderWeekCards(containerId, weeks){
+  const agg = weeklyAgg(weeks);
+  document.getElementById(containerId).innerHTML = agg.map(w => {
+    const s = pct(w.met, w.total);
+    const color = w.total ? scoreColor(s) : '#4e6490';
+    return `<div class="wk-card">
+      <div class="wk-label">${w.week.replace('Week','W')}</div>
+      <div class="wk-score" style="color:${color}">${w.total ? s.toFixed(1)+'%' : 'N/A'}</div>
+      <div class="wk-detail">✓${fmt(w.met)} ✗${w.notMet}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── TOP 5 PERFORMERS ─────────────────────────────────────────────────
+function renderTop5(containerId, agents, limit=5){
+  const sorted = [...agents].filter(a=>a.total>=5).sort((a,b)=>b.score-a.score||b.total-a.total).slice(0,limit);
+  const colors = ['perf-gold','perf-silver','perf-bronze','',''];
+  const rankColors = ['r1','r2','r3','',''];
+  const medals = ['🥇','🥈','🥉','④','⑤'];
+  const avBgs = ['linear-gradient(135deg,#e8c830,#f5a623)','linear-gradient(135deg,#b0bec5,#78909c)','linear-gradient(135deg,#cd7f32,#a0522d)','linear-gradient(135deg,#4f8ef7,#2d6de0)','linear-gradient(135deg,#9b6dff,#7c4dff)'];
+  document.getElementById(containerId).innerHTML = sorted.map((a,i)=>`
+    <div class="perf-card ${colors[i]||''}">
+      <div class="perf-rank ${rankColors[i]}">${medals[i]} #${i+1}</div>
+      <div class="perf-avatar" style="background:${avBgs[i]}">${initials(a.agent)}</div>
+      <div class="perf-name">${truncate(a.agent,18)}</div>
+      <div class="perf-team">${truncate(a.team,22)}</div>
+      <div class="perf-score" style="color:${scoreColor(a.score)}">${a.score.toFixed(1)}%</div>
+      <div class="perf-meta">${a.tickets} tickets · ${a.total} params</div>
+      <span class="badge ${a.section==='IMS'?'badge-blue':'badge-purple'}" style="font-size:9px;margin-top:6px;padding:2px 6px">${a.section}</span>
+    </div>`).join('');
+}
+
+// ─── AGENT TABLE ──────────────────────────────────────────────────────
+function renderAgentTable(tbodyId, agents, agentTerm){
+  document.getElementById(tbodyId).innerHTML = agents.map((a,i)=>`
+    <tr>
+      <td class="td-mono" style="color:var(--text3)">${i+1}</td>
+      <td>${hl(a.agent, agentTerm)}</td>
+      <td style="font-size:10px;color:var(--text3)">${truncate(a.team,22)}</td>
+      <td class="td-mono" style="color:#29d68f">${a.met}</td>
+      <td class="td-mono" style="color:${a.notMet>0?'#f44965':'var(--text3)'}">${a.notMet}</td>
+      <td><span class="pill ${pillClass(a.score)}">${a.score.toFixed(1)}%</span></td>
+    </tr>`).join('');
+}
+
+// ─── NM TABLE ─────────────────────────────────────────────────────────
+function renderNMTable(tbodyId, nm, agentTerm){
+  document.getElementById(tbodyId).innerHTML = nm.map((r,i)=>`
+    <tr class="nm-clickable" onclick="toggleRow('cmt-${tbodyId}-${i}')">
+      <td class="td-mono" style="font-size:10px">${r.TicketNum}</td>
+      <td><span class="src-pill" style="background:rgba(79,142,247,0.1);color:var(--text2);font-size:10px;padding:1px 5px">${r.Week}</span></td>
+      <td><span class="src-pill src-${r.Source.toLowerCase()}">${r.Source}</span></td>
+      <td style="font-size:11px">${r.Tower}</td>
+      <td style="font-size:10px;color:var(--text3)">${truncate(r.Team,20)}</td>
+      <td style="font-size:11px">${r.Parameter}</td>
+      <td style="font-size:11px">${hl(r.Agent, agentTerm)}</td>
+    </tr>
+    <tr class="cmt-row" id="cmt-${tbodyId}-${i}">
+      <td colspan="7">💬 ${r.Remarks && r.Remarks!=='nan' ? r.Remarks : 'No remarks recorded'}</td>
+    </tr>`).join('');
+}
+
+function toggleRow(id){ const el=document.getElementById(id); if(el) el.classList.toggle('open'); }
+
+// ─── CHARTS ───────────────────────────────────────────────────────────
+function initChart(id, config){
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  if(charts[id]) { charts[id].destroy(); }
+  charts[id] = new Chart(ctx, config);
+  return charts[id];
+}
+
+function gridOpts(min, max){
+  return { color:'rgba(99,140,220,0.07)', drawBorder:false };
+}
+
+function makeLineChart(id, labels, datasets, yMin){
+  return initChart(id, {
+    type:'line',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display: datasets.length>1, labels:{ usePointStyle:true, padding:14, font:{size:11} } } },
+      scales:{
+        y:{ min:yMin||50, grid:gridOpts(), ticks:{ callback:v=>v+'%', color:'#4e6490', font:{size:10} } },
+        x:{ grid:gridOpts(), ticks:{ color:'#4e6490', font:{size:10} } }
+      },
+      elements:{ line:{ tension:.4, borderWidth:2 }, point:{ radius:4, hoverRadius:6 } }
+    }
+  });
+}
+
+function makeDonut(id, labels, data, colors){
+  return initChart(id, {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:8 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'70%',
+      plugins:{ legend:{ display:false } }
+    }
+  });
+}
+
+function makeHBar(id, labels, data, colors, xMin){
+  return initChart(id, {
+    type:'bar',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderRadius:4, barThickness:16 }] },
+    options:{
+      responsive:true, maintainAspectRatio:false, indexAxis:'y',
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ min:xMin||0, grid:gridOpts(), ticks:{ callback:v=>v+(xMin!=null?'%':''), color:'#4e6490', font:{size:10} } },
+        y:{ grid:{ display:false }, ticks:{ color:'#8fa4cc', font:{size:10} } }
+      }
+    }
+  });
+}
+
+function makeGroupedBar(id, labels, datasets){
+  return initChart(id, {
+    type:'bar',
+    data:{ labels, datasets },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:true, labels:{ usePointStyle:true, padding:12, font:{size:10} } } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ color:'#4e6490', font:{size:10} } },
+        y:{ grid:gridOpts(), ticks:{ color:'#4e6490', font:{size:10} } }
+      }
+    }
+  });
+}
+
+function updateCharts(f){
+  const imsW = weeklyAgg(filterWeekly(f,'IMS'));
+  const amsW = weeklyAgg(filterWeekly(f,'AMS'));
+  const weeks = ['Week 1','Week 2','Week 3','Week 4'];
+  const wShort = ['W1','W2','W3','W4'];
+
+  // IMS line
+  makeLineChart('ims-line-chart', wShort,
+    [{ label:'IMS Score', data: imsW.map(w=>pct(w.met,w.total)||null), borderColor:'#4f8ef7', backgroundColor:'rgba(79,142,247,0.08)', fill:true, pointBackgroundColor: imsW.map(w=>scoreColor(pct(w.met,w.total))) }],
+    60);
+
+  // AMS line
+  makeLineChart('ams-line-chart', wShort,
+    [{ label:'AMS Score', data: amsW.map(w=>pct(w.met,w.total)||null), borderColor:'#9b6dff', backgroundColor:'rgba(155,109,255,0.08)', fill:true, pointBackgroundColor: amsW.map(w=>scoreColor(pct(w.met,w.total))) }],
+    60);
+
+  // Compare line
+  makeLineChart('compare-line-chart', wShort, [
+    { label:'IMS', data:imsW.map(w=>pct(w.met,w.total)||null), borderColor:'#4f8ef7', backgroundColor:'rgba(79,142,247,0.06)', fill:false, pointBackgroundColor:'#4f8ef7' },
+    { label:'AMS', data:amsW.map(w=>pct(w.met,w.total)||null), borderColor:'#9b6dff', backgroundColor:'rgba(155,109,255,0.06)', fill:false, pointBackgroundColor:'#9b6dff' },
+  ], 50);
+
+  // Donuts
+  const imsT = imsW.reduce((a,w)=>({met:a.met+w.met,nm:a.nm+w.notMet}),{met:0,nm:0});
+  const amsT = amsW.reduce((a,w)=>({met:a.met+w.met,nm:a.nm+w.notMet}),{met:0,nm:0});
+  makeDonut('ims-donut-chart',['Met','Not Met'],[imsT.met,imsT.nm],['#29d68f','#f44965']);
+  makeDonut('ams-donut-chart',['Met','Not Met'],[amsT.met,amsT.nm],['#9b6dff','#f44965']);
+
+  const imsTotal=imsT.met+imsT.nm, amsTotal=amsT.met+amsT.nm;
+  document.getElementById('ims-donut-legend').innerHTML=`<span style="color:#29d68f">● Met: ${fmt(imsT.met)} (${imsTotal?pct(imsT.met,imsTotal).toFixed(1):0}%)</span><span style="color:#f44965">● NM: ${fmt(imsT.nm)} (${imsTotal?pct(imsT.nm,imsTotal).toFixed(1):0}%)</span>`;
+  document.getElementById('ams-donut-legend').innerHTML=`<span style="color:#9b6dff">● Met: ${fmt(amsT.met)} (${amsTotal?pct(amsT.met,amsTotal).toFixed(1):0}%)</span><span style="color:#f44965">● NM: ${fmt(amsT.nm)} (${amsTotal?pct(amsT.nm,amsTotal).toFixed(1):0}%)</span>`;
+
+  // IMS Tower
+  const imsTowers = TOWER_ROWS.filter(t=>t.section==='IMS');
+  makeHBar('ims-tower-chart',
+    imsTowers.map(t=>t.tower),
+    imsTowers.map(t=>t.score),
+    imsTowers.map(t=>scoreColor(t.score)), 60);
+
+  // AMS source bar
+  const amsSrcData = ['INC','SR'].map(src => {
+    const rows = filterWeekly(f,'AMS').filter(r=>r.source===src);
+    const m=rows.reduce((s,r)=>s+r.met,0), nm=rows.reduce((s,r)=>s+r.notMet,0);
+    return { src, met:m, nm, score:pct(m,m+nm) };
+  });
+  makeGroupedBar('ams-src-chart', amsSrcData.map(d=>d.src), [
+    { label:'Met', data:amsSrcData.map(d=>d.met), backgroundColor:'#29d68f', borderRadius:4, barThickness:24 },
+    { label:'Not Met', data:amsSrcData.map(d=>d.nm), backgroundColor:'#f44965', borderRadius:4, barThickness:24 }
+  ]);
+
+  // Param charts
+  const imsParams = filterParams(f,'IMS').sort((a,b)=>b.count-a.count).slice(0,8);
+  makeHBar('ims-param-chart', imsParams.map(p=>truncate(p.parameter,26)), imsParams.map(p=>p.count), imsParams.map(()=>'rgba(244,73,101,0.7)'));
+
+  const amsParams = filterParams(f,'AMS').sort((a,b)=>b.count-a.count).slice(0,8);
+  makeHBar('ams-param-chart', amsParams.map(p=>truncate(p.parameter,26)), amsParams.map(p=>p.count), amsParams.map(()=>'rgba(155,109,255,0.7)'));
+
+  // Compare params
+  const allParams = [...new Set([...imsParams, ...amsParams].map(p=>p.parameter))].slice(0,6);
+  const imsParamMap = Object.fromEntries(imsParams.map(p=>[p.parameter,p.count]));
+  const amsParamMap = Object.fromEntries(amsParams.map(p=>[p.parameter,p.count]));
+  makeGroupedBar('compare-param-chart', allParams.map(p=>truncate(p,20)), [
+    { label:'IMS', data:allParams.map(p=>imsParamMap[p]||0), backgroundColor:'rgba(79,142,247,0.7)', borderRadius:3, barThickness:14 },
+    { label:'AMS', data:allParams.map(p=>amsParamMap[p]||0), backgroundColor:'rgba(155,109,255,0.7)', borderRadius:3, barThickness:14 }
+  ]);
+}
+
+// ─── SORT TABLES ──────────────────────────────────────────────────────
+const agentSort = { IMS:{ col:'score', dir:-1 }, AMS:{ col:'score', dir:-1 } };
+
+function sortTable(tbodyId, col, defaultDir){
+  const sec = tbodyId.startsWith('ims') ? 'IMS' : 'AMS';
+  if(agentSort[sec].col === col) agentSort[sec].dir *= -1;
+  else { agentSort[sec].col = col; agentSort[sec].dir = defaultDir||1; }
+  renderAll(getF());
+}
+
+// ─── MAIN RENDER ──────────────────────────────────────────────────────
+function renderAll(f){
+  renderScoreStrip(f);
+  renderAllKPIs(f);
+
+  // Top 5 overall
+  const allAgents = filterAgents(f,'');
+  renderTop5('top5-overall', allAgents, 5);
+
+  // IMS
+  const imsW = filterWeekly(f,'IMS');
+  renderWeekCards('ims-week-cards', imsW);
+  let imsAg = filterAgents(f,'IMS');
+  imsAg.sort((a,b) => {
+    const s=agentSort.IMS;
+    const av=s.col==='name'?a.agent:s.col==='team'?a.team:a[s.col]||0;
+    const bv=s.col==='name'?b.agent:s.col==='team'?b.team:b[s.col]||0;
+    if(typeof av==='string') return s.dir*av.localeCompare(bv);
+    return s.dir*(av-bv);
+  });
+  renderTop5('ims-top5', imsAg, 3);
+  renderAgentTable('ims-agent-table', imsAg, f.agent);
+  const imsNM = filterNM(f,'IMS');
+  renderNMTable('ims-nm-table', imsNM, f.agent);
+  document.getElementById('ims-nm-count').textContent = imsNM.length + ' records';
+
+  // AMS
+  const amsW = filterWeekly(f,'AMS');
+  renderWeekCards('ams-week-cards', amsW);
+  let amsAg = filterAgents(f,'AMS');
+  amsAg.sort((a,b) => {
+    const s=agentSort.AMS;
+    const av=s.col==='name'?a.agent:s.col==='team'?a.team:a[s.col]||0;
+    const bv=s.col==='name'?b.agent:s.col==='team'?b.team:b[s.col]||0;
+    if(typeof av==='string') return s.dir*av.localeCompare(bv);
+    return s.dir*(av-bv);
+  });
+  renderTop5('ams-top5', amsAg, 3);
+  renderAgentTable('ams-agent-table', amsAg, f.agent);
+  const amsNM = filterNM(f,'AMS');
+  renderNMTable('ams-nm-table', amsNM, f.agent);
+  document.getElementById('ams-nm-count').textContent = amsNM.length + ' records';
+
+  // Sort header indicators
+  ['IMS','AMS'].forEach(sec => {
+    const s = agentSort[sec];
+    ['name','team','met','notMet','score'].forEach(col => {
+      const el = document.getElementById(`sh-${sec.toLowerCase()}-${col}`);
+      if(el) { el.textContent = col===s.col ? (s.dir===1?'↑':'↓') : ''; el.parentElement?.classList.toggle('sort-active', col===s.col); }
+    });
+  });
+
+  updateCharts(f);
+}
+
+// ─── POPULATE TOWER FILTER ────────────────────────────────────────────
+function populateTowerFilter(){
+  const towers = [...new Set(TOWER_ROWS.map(t=>t.tower))].sort();
+  const sel = document.getElementById('f-tower');
+  towers.forEach(t => { const o=document.createElement('option'); o.value=t; o.textContent=t; sel.appendChild(o); });
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────
+function resetFilters(){
+  ['f-section','f-week','f-source','f-tower','f-eval'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-agent').value='';
+  renderAll(getF());
+}
+
+// ─── EVENTS ───────────────────────────────────────────────────────────
+['f-section','f-week','f-source','f-tower','f-eval'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>renderAll(getF()));
+});
+document.getElementById('f-agent').addEventListener('input',()=>renderAll(getF()));
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+Chart.defaults.color = '#4e6490';
+Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+Chart.defaults.font.size = 11;
+
+document.getElementById('dash-footer').textContent =
+  `ECMS Quality Audit Dashboard · April 2026 · IMS: 71 engineers · AMS: 49 engineers · 2,136 total parameters · 325 tickets · Generated: ${new Date().toLocaleString('en-GB',{dateStyle:'medium',timeStyle:'short'})}`;
+
+populateTowerFilter();
+renderAll(getF());
+</script>
+</body>
+</html>
